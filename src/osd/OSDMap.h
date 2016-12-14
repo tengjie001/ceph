@@ -28,6 +28,7 @@
 #include "osd_types.h"
 
 //#include "include/ceph_features.h"
+#include <atomic>
 #include "crush/CrushWrapper.h"
 #include <vector>
 #include <list>
@@ -199,7 +200,21 @@ public:
   
 private:
   uuid_d fsid;
-  epoch_t epoch;        // what epoch of the osd cluster descriptor is this
+
+  class CopyableAtomicInt : public std::atomic<epoch_t> {
+  public:
+    CopyableAtomicInt(int init) {
+      store(init);
+    }
+    CopyableAtomicInt& operator=(const CopyableAtomicInt& other) {
+      store(other.load());
+      return *this;
+    }
+    CopyableAtomicInt(const CopyableAtomicInt& other) {
+      store(other.load());
+    }
+  } epoch;
+
   utime_t created, modified; // epoch start time
   int32_t pool_max;     // the largest pool num, ever
 
@@ -257,7 +272,7 @@ private:
   friend class OSDMonitor;
 
  public:
-  OSDMap() : epoch(0), 
+  OSDMap() : epoch(0),
 	     pool_max(-1),
 	     flags(0),
 	     num_osd(0), num_up_osd(0), num_in_osd(0),
@@ -304,7 +319,6 @@ public:
 
   epoch_t get_epoch() const { return epoch; }
   void inc_epoch() { epoch++; }
-
   void set_epoch(epoch_t e);
 
   /* stamps etc */
@@ -315,7 +329,7 @@ public:
   void get_blacklist(list<pair<entity_addr_t,utime_t > > *bl) const;
 
   string get_cluster_snapshot() const {
-    if (cluster_snapshot_epoch == epoch)
+    if (cluster_snapshot_epoch  == epoch)
       return cluster_snapshot;
     return string();
   }

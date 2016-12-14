@@ -2003,7 +2003,11 @@ void OSDMap::decode_classic(bufferlist::iterator& p)
 
   // base
   ::decode(fsid, p);
-  ::decode(epoch, p);
+
+  epoch_t decoded_epoch;
+  ::decode(decoded_epoch, p);
+  epoch = decoded_epoch;
+
   ::decode(created, p);
   ::decode(modified, p);
 
@@ -2133,7 +2137,11 @@ void OSDMap::decode(bufferlist::iterator& bl)
     DECODE_START(3, bl); // client-usable data
     // base
     ::decode(fsid, bl);
-    ::decode(epoch, bl);
+
+    epoch_t decoded_epoch;
+    ::decode(decoded_epoch, bl);
+    epoch = decoded_epoch;
+
     ::decode(created, bl);
     ::decode(modified, bl);
 
